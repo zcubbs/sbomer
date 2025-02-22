@@ -1,0 +1,296 @@
+version: '3'
+
+vars:
+  BINARY_NAME: sbomer
+  BUILD_DIR: build
+  DB_URL: postgres://postgres:postgres@localhost:5432/sbomer?sslmode=disable
+  BINARY_EXT: '{{if eq OS "windows"}}.exe{{end}}'
+  PATH_SEP: '{{if eq OS "windows"}}\{{else}}/{{end}}'
+
+tasks:
+  default:
+    cmds:
+      - task --list-all
+
+  clean:
+    desc: Clean build artifacts
+    cmds:
+      - cmd: rm -rf bin build {{.BINARY_NAME}}{{.BINARY_EXT}}
+        platforms: [linux, darwin]
+      - cmd: cmd /c "if exist bin rd /S /Q bin && if exist build rd /S /Q build && if exist {{.BINARY_NAME}}{{.BINARY_EXT}} del /F /Q {{.BINARY_NAME}}{{.BINARY_EXT}}"
+        platforms: [windows]
+
+  build:
+    desc: Build all services
+    cmds:
+      - task: build:sbomer
+      - task: build:fetcher
+
+  build:sbomer:
+    desc: Build sbomer service
+    env:
+      GOOS: '{{OS}}'
+      GOARCH: amd64
+      CGO_ENABLED: 0
+    vars:
+      BUILD_PATH: 'bin{{.PATH_SEP}}sbomer{{.BINARY_EXT}}'
+    cmds:
+      - cmd: mkdir -p bin
+        platforms: [linux, darwin]
+      - cmd: cmd /c "if not exist bin mkdir bin"
+        platforms: [windows]
+      - go build -o "{{.BUILD_PATH}}" ./cmd/sbomer
+
+  build:fetcher:
+    desc: Build fetcher service
+    env:
+      GOOS: '{{OS}}'
+      GOARCH: amd64
+      CGO_ENABLED: 0
+    vars:
+      BUILD_PATH: 'bin{{.PATH_SEP}}fetcher{{.BINARY_EXT}}'
+    cmds:
+      - cmd: mkdir -p bin
+        platforms: [linux, darwin]
+      - cmd: cmd /c "if not exist bin mkdir bin"
+        platforms: [windows]
+      - go build -o "{{.BUILD_PATH}}" ./cmd/fetcher
+
+  run:sbomer:
+    desc: Run sbomer service
+    deps: [build:sbomer]
+    cmds:
+      - ./bin/sbomer
+
+  run:fetcher:
+    desc: Run fetcher service
+    deps: [build:fetcher]
+    cmds:
+      - ./bin/fetcher
+
+  run:all:
+    desc: Run both sbomer and fetcher services
+    deps: [build]
+    cmds:
+      - cmd: start /B ./bin/sbomer && start /B ./bin/fetcher
+        platforms: [windows]
+      - cmd: ./bin/sbomer & ./bin/fetcher &
+        platforms: [linux, darwin]
+
+  test:
+    desc: Run tests
+    cmds:
+      - go test -v ./...
+
+  lint:
+    desc: Run linters
+    cmds:
+      - go vet ./...
+      - task: fmt
+
+  fmt:
+    desc: Format Go code
+    cmds:
+      - gofmt -l -w .
+    platforms: [linux, darwin]
+
+  fmt:windows:
+    desc: Format Go code
+    cmds:
+      - cmd /c "for /f \"tokens=*\" %G in ('go list -f {{`"{{.Dir}}"`}} ./...') do @(gofmt -l -w \"%G\")"
+
+  run:
+    desc: Run the application
+    deps: [build]
+    interactive: true
+    vars:
+      BINARY: '{{.ROOT_DIR}}{{.PATH_SEP}}{{.BUILD_DIR}}{{.PATH_SEP}}{{.BINARY_NAME}}{{.BINARY_EXT}}'
+    cmds:
+      - cmd /c "{{.BINARY}}"
+    platforms: [windows]
+
+  run:unix:
+    desc: Run the application
+    deps: [build]
+    interactive: true
+    vars:
+      BINARY: '{{.ROOT_DIR}}{{.PATH_SEP}}{{.BUILD_DIR}}{{.PATH_SEP}}{{.BINARY_NAME}}{{.BINARY_EXT}}'
+    cmds:
+      - ./{{.BINARY}}
+    platforms: [linux, darwin]
+
+  dev:
+    desc: Start development environment
+    deps: [docker:up, migrate]
+    cmds:
+      - task: run
+
+  docker:up:
+    desc: Start Docker services
+    cmds:
+      - docker-compose up -d
+      - echo "Waiting for services to be healthy..."
+      #- cmd /c "timeout /t 10 /nobreak"
+    platforms: [windows]
+
+  docker:up:unix:
+    desc: Start Docker services
+    cmds:
+      - docker-compose up -d
+      - echo "Waiting for services to be healthy..."
+      #- sleep 10
+    platforms: [linux, darwin]
+
+  docker:down:
+    desc: Stop Docker services
+    cmds:
+      - docker-compose down
+
+  docker:logs:
+    desc: View Docker services logs
+    cmds:
+      - docker-compose logs -f
+
+  docker-build:
+    desc: Build Docker image
+    cmds:
+      - docker build -t {{.BINARY_NAME}}:latest .
+
+  deps:
+    desc: Download dependencies
+    cmds:
+      - go mod download
+      - go mod tidy
+
+  sqlc:
+    desc: Generate SQL code using sqlc
+    cmds:
+      - sqlc generate
+
+  sqlc-install:
+    desc: Install sqlc
+    cmds:
+      - go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+
+  db-verify:
+    desc: Verify SQL queries using sqlc
+    cmds:
+      - sqlc verify
+
+  atlas-install:
+    desc: Install Atlas CLI
+    cmds:
+      - go install ariga.io/atlas/cmd/atlas@latest
+
+  db-create:
+    desc: Create database
+    deps: [setup-env]
+    cmds:
+      - psql -h localhost -U postgres -c "CREATE DATABASE sbomer"
+
+  db-drop:
+    desc: Drop database
+    deps: [setup-env]
+    cmds:
+      - psql -h localhost -U postgres -c "DROP DATABASE IF EXISTS sbomer"
+
+  db-migrate:
+    desc: Apply database migrations
+    deps: [setup-env]
+    dir: migrations
+    cmds:
+      - atlas migrate apply --env local
+
+  db-status:
+    desc: Check migration status
+    deps: [setup-env]
+    dir: migrations
+    cmds:
+      - atlas migrate status --env local
+
+  db-diff:
+    desc: Generate migration files for schema changes
+    deps: [setup-env]
+    dir: migrations
+    cmds:
+      - atlas migrate diff {{.CLI_ARGS}} --env local
+
+  db-lint:
+    desc: Lint migration files
+    deps: [setup-env]
+    dir: migrations
+    cmds:
+      - atlas migrate lint --env local
+
+  db-hash:
+    desc: Hash migration files to detect changes
+    deps: [setup-env]
+    dir: migrations
+    cmds:
+      - atlas migrate hash --env local
+
+  setup-env:
+    desc: Setup environment file for local development
+    cmds:
+      - task: setup-env:{{OS}}
+
+  setup-env:windows:
+    internal: true
+    cmds:
+      - cmd /c "if not exist .env copy .env.example .env"
+
+  setup-env:linux:
+    internal: true
+    cmds:
+      - test -f .env || cp .env.example .env
+
+  setup-env:darwin:
+    internal: true
+    cmds:
+      - test -f .env || cp .env.example .env
+
+  build:publisher:
+    desc: Build the test publisher
+    env:
+      GOOS: windows
+      GOARCH: amd64
+      CGO_ENABLED: 0
+    vars:
+      BUILD_PATH: '{{.BUILD_DIR}}{{.PATH_SEP}}publisher{{.BINARY_EXT}}'
+    cmds:
+      - cmd /c "if not exist {{.BUILD_DIR}} mkdir {{.BUILD_DIR}}"
+      - go build -o "{{.BUILD_PATH}}" ./cmd/publisher
+    platforms: [windows]
+
+  publish:
+    desc: Run the test publisher
+    deps: [build:publisher]
+    interactive: true
+    vars:
+      BINARY: '{{.BUILD_DIR}}{{.PATH_SEP}}publisher{{.BINARY_EXT}}'
+    cmds:
+      - cmd /c "{{.BINARY}}" {{.CLI_ARGS}}
+    platforms: [windows]
+
+  build:migrate:
+    desc: Build the migration tool
+    env:
+      GOOS: windows
+      GOARCH: amd64
+      CGO_ENABLED: 0
+    vars:
+      BUILD_PATH: '{{.BUILD_DIR}}{{.PATH_SEP}}migrate{{.BINARY_EXT}}'
+    cmds:
+      - cmd /c "if not exist {{.BUILD_DIR}} mkdir {{.BUILD_DIR}}"
+      - go build -o "{{.BUILD_PATH}}" ./scripts/migrate.go
+    platforms: [windows]
+
+  migrate:
+    desc: Run database migrations
+    deps: [docker:up, build:migrate]
+    vars:
+      BINARY: '{{.BUILD_DIR}}{{.PATH_SEP}}migrate{{.BINARY_EXT}}'
+    env:
+      SBOMER_DB_URL: postgres://postgres:postgres@localhost:5432/sbomer?sslmode=disable
+    cmds:
+      - cmd /c "{{.BINARY}}"

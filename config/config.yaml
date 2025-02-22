@@ -1,0 +1,29 @@
+app:
+  log_level: info
+
+database:
+  host: localhost
+  port: 5432
+  user: postgres
+  password: postgres
+  dbname: sbomer
+  sslmode: disable
+
+gitlab:
+  host: gitlab.com
+  scheme: https
+  token: "" # Set via environment variable SBOMER_GITLAB_TOKEN
+  temp_dir: tmp/sbomer
+
+amqp:
+  uri: "amqp://guest:guest@localhost:5672/"
+  queue: sbomer
+
+syft:
+  syft_bin_path: bin/syft.exe
+
+fetcher:
+  # runs once
+  schedule: "once"
+  group_ids:
+    - "5528650"

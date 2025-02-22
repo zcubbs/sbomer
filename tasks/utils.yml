@@ -1,0 +1,59 @@
+version: '3'
+
+tasks:
+  copy-env-file:
+    desc: Copy environment file if it doesn't exist
+    internal: true
+    cmds:
+      - |
+        {{if eq OS "windows"}}
+        if not exist .env (
+          copy .env.example .env
+        )
+        {{else}}
+        if [ ! -f .env ]; then
+          cp .env.example .env
+        fi
+        {{end}}
+    status:
+      - test -f .env
+
+  gofmt:
+    desc: Run gofmt
+    internal: true
+    cmds:
+      - |
+        {{if eq OS "windows"}}
+        @echo off
+        for /f "tokens=*" %%i in ('go list -f "{{.Dir}}" ./...') do (
+          gofmt -l -w "%%i"
+        )
+        {{else}}
+        find . -name "*.go" -not -path "./vendor/*" -not -path "./.git/*" | xargs gofmt -l -w
+        {{end}}
+
+  check-cmd:
+    desc: Check if a command exists
+    internal: true
+    vars:
+      CMD: '{{.CMD}}'
+    cmds:
+      - |
+        {{if eq OS "windows"}}
+        where {{.CMD}} >nul 2>&1
+        {{else}}
+        command -v {{.CMD}} >/dev/null 2>&1
+        {{end}}
+
+  ensure-dir:
+    desc: Ensure directory exists
+    internal: true
+    vars:
+      DIR: '{{.DIR}}'
+    cmds:
+      - |
+        {{if eq OS "windows"}}
+        if not exist {{.DIR}} mkdir {{.DIR}}
+        {{else}}
+        mkdir -p {{.DIR}}
+        {{end}}

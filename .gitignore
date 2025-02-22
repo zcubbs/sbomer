@@ -1,0 +1,26 @@
+# Binaries and build artifacts
+/bin/
+/build/
+sbomer
+
+# IDE files
+.idea/
+.vscode/
+
+# Dependencies
+vendor/
+
+# Environment files
+.env
+.env.local
+
+# Temporary files
+tmp/
+*.tmp
+
+# Log files
+*.log
+
+# OS-specific files
+.DS_Store
+Thumbs.db
