@@ -1,7 +1,6 @@
 # Binaries and build artifacts
 /bin/
 /build/
-sbomer
 
 # IDE files
 .idea/

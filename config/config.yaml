@@ -27,3 +27,6 @@ fetcher:
   schedule: "once"
   group_ids:
     - "5528650"
+  exclude_topics:
+    - "skip-sbom"
+    - "no-sbom"

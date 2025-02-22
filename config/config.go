@@ -52,10 +52,11 @@ type SyftConfig struct {
 }
 
 type FetcherConfig struct {
-	Schedule    string   `mapstructure:"schedule"`
-	BatchSize   int      `mapstructure:"batch_size"`
-	CoolOffSecs int      `mapstructure:"cool_off_secs"`
-	GroupIDs    []string `mapstructure:"group_ids"` // Optional list of GitLab group IDs
+	Schedule      string   `mapstructure:"schedule"`
+	BatchSize     int      `mapstructure:"batch_size"`
+	CoolOffSecs   int      `mapstructure:"cool_off_secs"`
+	GroupIDs      []string `mapstructure:"group_ids"`
+	ExcludeTopics []string `mapstructure:"exclude_topics"`
 }
 
 func (c *Config) GetDatabaseURI() string {
@@ -108,10 +109,11 @@ func LoadConfig(configPath string) (*Config, error) {
 			ConsumerGroup: "sbomer-group",
 		},
 		Fetcher: FetcherConfig{
-			Schedule:    "once", // Run once for development
-			BatchSize:   10,
-			CoolOffSecs: 5,
-			GroupIDs:    []string{}, // Empty by default, will fetch all projects if not specified
+			Schedule:      "once", // Run once for development
+			BatchSize:     10,
+			CoolOffSecs:   5,
+			GroupIDs:      []string{}, // Empty by default, will fetch all projects if not specified
+			ExcludeTopics: []string{}, // Empty by default, no topics excluded
 		},
 		Syft: SyftConfig{
 			Format:      "cyclonedx-json",
@@ -136,6 +138,7 @@ func LoadConfig(configPath string) (*Config, error) {
 	viper.SetDefault("fetcher.schedule", defaultConfig.Fetcher.Schedule)
 	viper.SetDefault("fetcher.batch_size", defaultConfig.Fetcher.BatchSize)
 	viper.SetDefault("fetcher.cool_off_secs", defaultConfig.Fetcher.CoolOffSecs)
+	viper.SetDefault("fetcher.exclude_topics", defaultConfig.Fetcher.ExcludeTopics)
 
 	// Read environment variables
 	viper.AutomaticEnv()
@@ -165,6 +168,7 @@ func LoadConfig(configPath string) (*Config, error) {
 	viper.BindEnv("fetcher.batch_size", "SBOMER_FETCHER_BATCH_SIZE")
 	viper.BindEnv("fetcher.cool_off_secs", "SBOMER_FETCHER_COOL_OFF_SECS")
 	viper.BindEnv("fetcher.group_ids", "SBOMER_FETCHER_GROUP_IDS")
+	viper.BindEnv("fetcher.exclude_topics", "SBOMER_FETCHER_EXCLUDE_TOPICS")
 
 	// Read config file
 	if err := viper.ReadInConfig(); err != nil {

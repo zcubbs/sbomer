@@ -14,14 +14,15 @@ import (
 )
 
 type Service struct {
-	gitlabClient *gitlab.Client
-	publisher    Publisher
-	db           *db.DB
-	schedule     string
-	batchSize    int
-	coolOffSecs  int
-	groupIDs     []string
-	cron         *cron.Cron
+	gitlabClient  *gitlab.Client
+	publisher     Publisher
+	db            *db.DB
+	schedule      string
+	batchSize     int
+	coolOffSecs   int
+	groupIDs      []string
+	excludeTopics []string
+	cron          *cron.Cron
 }
 
 type Publisher interface {
@@ -29,14 +30,15 @@ type Publisher interface {
 }
 
 type Config struct {
-	GitLabToken string
-	GitLabURL   string
-	Schedule    string
-	BatchSize   int
-	CoolOffSecs int
-	GroupIDs    []string
-	Publisher   Publisher
-	DB          *db.DB
+	GitLabToken   string
+	GitLabURL     string
+	Schedule      string
+	BatchSize     int
+	CoolOffSecs   int
+	GroupIDs      []string
+	ExcludeTopics []string
+	Publisher     Publisher
+	DB            *db.DB
 }
 
 func New(config Config) (*Service, error) {
@@ -47,14 +49,15 @@ func New(config Config) (*Service, error) {
 	}
 
 	return &Service{
-		gitlabClient: gitlabClient,
-		publisher:    config.Publisher,
-		db:           config.DB,
-		schedule:     config.Schedule,
-		batchSize:    config.BatchSize,
-		coolOffSecs:  config.CoolOffSecs,
-		groupIDs:     config.GroupIDs,
-		cron:         cron.New(cron.WithSeconds()),
+		gitlabClient:  gitlabClient,
+		publisher:     config.Publisher,
+		db:            config.DB,
+		schedule:      config.Schedule,
+		batchSize:     config.BatchSize,
+		coolOffSecs:   config.CoolOffSecs,
+		groupIDs:      config.GroupIDs,
+		excludeTopics: config.ExcludeTopics,
+		cron:          cron.New(cron.WithSeconds()),
 	}, nil
 }
 
@@ -118,6 +121,25 @@ func (s *Service) fetchAndPublish(ctx context.Context) error {
 	return nil
 }
 
+func (s *Service) shouldProcessProject(project *gitlab.Project) bool {
+	if len(s.excludeTopics) == 0 {
+		return true
+	}
+
+	// Check if any of the project's topics match the excluded topics
+	for _, topic := range project.Topics {
+		for _, excludedTopic := range s.excludeTopics {
+			if topic == excludedTopic {
+				log.Printf("Skipping project %s (ID: %d) due to excluded topic: %s",
+					project.PathWithNamespace, project.ID, topic)
+				return false
+			}
+		}
+	}
+
+	return true
+}
+
 func (s *Service) fetchGroupProjects(ctx context.Context, groupID string, startTime time.Time) (int, error) {
 	totalProjects := 0
 	page := 1
@@ -142,6 +164,11 @@ func (s *Service) fetchGroupProjects(ctx context.Context, groupID string, startT
 
 		// Process each project in the batch
 		for _, project := range projects {
+			// Skip if project has excluded topics
+			if !s.shouldProcessProject(project) {
+				continue
+			}
+
 			if err := s.publishProject(ctx, project.ID); err != nil {
 				log.Printf("Error publishing project %d: %v", project.ID, err)
 				continue
@@ -201,6 +228,11 @@ func (s *Service) fetchAllProjects(ctx context.Context, startTime time.Time) (in
 
 		// Process each project in the batch
 		for _, project := range projects {
+			// Skip if project has excluded topics
+			if !s.shouldProcessProject(project) {
+				continue
+			}
+
 			if err := s.publishProject(ctx, project.ID); err != nil {
 				log.Printf("Error publishing project %d: %v", project.ID, err)
 				continue

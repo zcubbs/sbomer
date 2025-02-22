@@ -64,14 +64,15 @@ func main() {
 
 	// Create fetcher service
 	fetcherConfig := fetcher.Config{
-		GitLabToken: cfg.GitLab.Token,
-		GitLabURL:   fmt.Sprintf("%s://%s", cfg.GitLab.Scheme, cfg.GitLab.Host),
-		Schedule:    cfg.Fetcher.Schedule,
-		BatchSize:   cfg.Fetcher.BatchSize,
-		CoolOffSecs: cfg.Fetcher.CoolOffSecs,
-		GroupIDs:    cfg.Fetcher.GroupIDs,
-		Publisher:   publisher,
-		DB:          database,
+		GitLabToken:   cfg.GitLab.Token,
+		GitLabURL:     fmt.Sprintf("%s://%s", cfg.GitLab.Scheme, cfg.GitLab.Host),
+		Schedule:      cfg.Fetcher.Schedule,
+		BatchSize:     cfg.Fetcher.BatchSize,
+		CoolOffSecs:   cfg.Fetcher.CoolOffSecs,
+		GroupIDs:      cfg.Fetcher.GroupIDs,
+		ExcludeTopics: cfg.Fetcher.ExcludeTopics,
+		Publisher:     publisher,
+		DB:            database,
 	}
 
 	service, err := fetcher.New(fetcherConfig)
