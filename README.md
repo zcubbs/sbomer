@@ -5,6 +5,7 @@ SBOMer is a Go-based tool for generating Software Bill of Materials (SBOM) for G
 ## Features
 
 - **Group-Based Project Fetching**: Recursively fetch projects from specified GitLab groups and their subgroups
+- **Topic-Based Filtering**: Skip projects with specific topics using exclude_topics configuration
 - **Efficient Processing**: Process projects in batches with configurable batch sizes and cool-off periods
 - **Message Queue Integration**: Uses RabbitMQ for reliable project processing
 - **Database Storage**: Stores fetch statistics and operation logs in PostgreSQL
@@ -41,9 +42,26 @@ database:
 
 fetcher:
   schedule: "once"
+  batch_size: 10
+  cool_off_secs: 5
   group_ids:
-    - "your-group-id"
+    - "your-group-id"  # Optional: Specify GitLab group IDs to fetch from
+  exclude_topics:      # Optional: Skip projects with these topics
+    - "skip-sbom"
+    - "no-sbom"
+
+syft:
+  syft_bin_path: bin/syft.exe
 ```
+
+### Topic-Based Filtering
+
+You can exclude projects from SBOM generation by adding specific topics to them in GitLab and listing those topics in the `exclude_topics` configuration. This is useful for:
+- Skipping projects that don't need SBOMs
+- Excluding test or template repositories
+- Managing large groups of repositories efficiently
+
+For example, if you add the topic "skip-sbom" to a GitLab project and include it in the `exclude_topics` list, that project will be automatically skipped during fetching.
 
 ## Environment Variables
 
@@ -51,6 +69,7 @@ fetcher:
 - `SBOMER_DB_URL`: Database connection string
 - `SBOMER_GITLAB_HOST`: GitLab host (default: gitlab.com)
 - `SBOMER_GITLAB_SCHEME`: GitLab scheme (default: https)
+- `SBOMER_FETCHER_EXCLUDE_TOPICS`: Comma-separated list of topics to exclude
 
 ## Getting Started
 
