@@ -4,12 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/zcubbs/sbomer/internal/db"
-	"github.com/zcubbs/sbomer/internal/gitlab"
-	"github.com/zcubbs/sbomer/internal/syft"
 	"log"
 	"os"
 	"path/filepath"
+
+	"github.com/zcubbs/sbomer/internal/db"
+	"github.com/zcubbs/sbomer/internal/gitlab"
+	"github.com/zcubbs/sbomer/internal/models"
+	"github.com/zcubbs/sbomer/internal/syft"
 )
 
 type Message struct {
@@ -17,18 +19,16 @@ type Message struct {
 }
 
 type Processor struct {
-	db       *db.DB
-	gitlab   *gitlab.Client
-	syft     *syft.Generator
-	sbomPath string
+	db     *db.DB
+	gitlab *gitlab.Client
+	syft   *syft.Generator
 }
 
-func New(database *db.DB, gitlabClient *gitlab.Client, sbomGenerator *syft.Generator, sbomOutputPath string) *Processor {
+func New(database *db.DB, gitlabClient *gitlab.Client, syftGenerator *syft.Generator) *Processor {
 	return &Processor{
-		db:       database,
-		gitlab:   gitlabClient,
-		syft:     sbomGenerator,
-		sbomPath: sbomOutputPath,
+		db:     database,
+		gitlab: gitlabClient,
+		syft:   syftGenerator,
 	}
 }
 
@@ -44,28 +44,55 @@ func (p *Processor) ProcessMessage(ctx context.Context, data []byte) error {
 	}
 
 	// Clone repository
-	repoPath, err := p.gitlab.CloneProject(msg.ProjectID)
+	repoPath, details, err := p.gitlab.CloneProject(msg.ProjectID)
 	if err != nil {
-		p.db.LogOperation(ctx, msg.ProjectID, "clone", "failed", err.Error())
+		err := p.db.LogOperation(ctx, msg.ProjectID, "clone", "failed", err.Error())
+		if err != nil {
+			return fmt.Errorf("failed to log clone failure: %w", err)
+		}
 		return fmt.Errorf("failed to clone repository: %w", err)
 	}
-	defer p.gitlab.CleanupRepository(repoPath)
+	defer func() {
+		if err := p.gitlab.CleanupRepository(repoPath); err != nil {
+			log.Printf("Failed to cleanup repository: %v", err)
+		}
+	}()
 
 	// Log clone success
 	if err := p.db.LogOperation(ctx, msg.ProjectID, "clone", "success", ""); err != nil {
 		log.Printf("Failed to log clone success: %v", err)
 	}
 
-	// make sure the output directory exists
-	if err := os.MkdirAll(p.sbomPath, 0755); err != nil {
-		return fmt.Errorf("failed to create output directory: %w", err)
-	}
+	// Create output path for SBOM
+	sbomPath := filepath.Join(repoPath, "sbom.json")
 
 	// Generate SBOM
-	outputPath := filepath.Join(p.sbomPath, fmt.Sprintf("sbom-%d.json", msg.ProjectID))
-	if err := p.syft.GenerateSBOM(repoPath, outputPath); err != nil {
-		p.db.LogOperation(ctx, msg.ProjectID, "sbom", "failed", err.Error())
+	err = p.syft.GenerateSBOM(repoPath, sbomPath)
+	if err != nil {
+		err := p.db.LogOperation(ctx, msg.ProjectID, "sbom", "failed", err.Error())
+		if err != nil {
+			return fmt.Errorf("failed to log SBOM failure: %w", err)
+		}
 		return fmt.Errorf("failed to generate SBOM: %w", err)
+	}
+
+	// Read generated SBOM file
+	sbomData, err := os.ReadFile(sbomPath)
+	if err != nil {
+		return fmt.Errorf("failed to read SBOM file: %w", err)
+	}
+
+	// Store SBOM in database
+	sbom := &models.SBOM{
+		ProjectUID: details.ID,
+		Name:       details.Name,
+		Path:       details.Path,
+		Topics:     details.Topics,
+		SBOMData:   json.RawMessage(sbomData),
+	}
+
+	if err := p.db.SaveSBOM(ctx, sbom); err != nil {
+		return fmt.Errorf("failed to save SBOM: %w", err)
 	}
 
 	// Log SBOM generation success

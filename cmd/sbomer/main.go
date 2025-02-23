@@ -12,7 +12,6 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"syscall"
 )
 
@@ -44,12 +43,15 @@ func main() {
 	defer database.Close()
 
 	// Initialize GitLab client
-	gitlabClient := gitlab.New(
+	gitlabClient, err := gitlab.New(
 		cfg.GitLab.Token,
 		cfg.GitLab.Host,
 		cfg.GitLab.Scheme,
 		cfg.GitLab.TempDir,
 	)
+	if err != nil {
+		log.Fatalf("Failed to initialize GitLab client: %v", err)
+	}
 
 	// Initialize SBOM generator
 	sbomGenerator := syft.New(cfg.Syft.Format, cfg.Syft.SyftBinPath)
@@ -59,7 +61,6 @@ func main() {
 		database,
 		gitlabClient,
 		sbomGenerator,
-		filepath.Join(cfg.GitLab.TempDir, "sboms"),
 	)
 
 	// Initialize RabbitMQ consumer
