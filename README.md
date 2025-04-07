@@ -46,6 +46,8 @@ fetcher:
   cool_off_secs: 5
   group_ids:
     - "your-group-id"  # Optional: Specify GitLab group IDs to fetch from
+  include_topics: # Optional: Include only projects with these topics
+    - sbomer
   exclude_topics:      # Optional: Skip projects with these topics
     - "skip-sbom"
     - "no-sbom"
