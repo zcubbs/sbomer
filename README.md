@@ -47,7 +47,7 @@ fetcher:
   group_ids:
     - "your-group-id"  # Optional: Specify GitLab group IDs to fetch from
   include_topics:      # Optional: Include only projects with these topics
-    - sbomer
+    - "sbomer"
   exclude_topics:      # Optional: Skip projects with these topics
     - "skip-sbom"
     - "no-sbom"
