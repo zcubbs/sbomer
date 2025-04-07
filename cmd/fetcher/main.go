@@ -71,6 +71,7 @@ func main() {
 		CoolOffSecs:   cfg.Fetcher.CoolOffSecs,
 		GroupIDs:      cfg.Fetcher.GroupIDs,
 		ExcludeTopics: cfg.Fetcher.ExcludeTopics,
+		IncludeTopics: cfg.Fetcher.IncludeTopics,
 		Publisher:     publisher,
 		DB:            database,
 	}

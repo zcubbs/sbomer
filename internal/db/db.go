@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/zcubbs/sbomer/internal/models"
@@ -30,7 +31,7 @@ func (db *DB) Close() {
 
 func (db *DB) LogOperation(ctx context.Context, projectID int, operation string, status string, error string) error {
 	query := `
-		INSERT INTO operations (project_id, operation, status, error)
+		INSERT INTO operations (project_id, operation, status, error_message)
 		VALUES ($1, $2, $3, $4)
 	`
 	_, err := db.pool.Exec(ctx, query, projectID, operation, status, error)

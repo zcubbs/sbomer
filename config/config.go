@@ -2,11 +2,12 @@ package config
 
 import (
 	"fmt"
-	"github.com/joho/godotenv"
-	"github.com/spf13/viper"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/joho/godotenv"
+	"github.com/spf13/viper"
 )
 
 type Config struct {
@@ -57,6 +58,7 @@ type FetcherConfig struct {
 	CoolOffSecs   int      `mapstructure:"cool_off_secs"`
 	GroupIDs      []string `mapstructure:"group_ids"`
 	ExcludeTopics []string `mapstructure:"exclude_topics"`
+	IncludeTopics []string `mapstructure:"include_topics"`
 }
 
 func (c *Config) GetDatabaseURI() string {
@@ -139,6 +141,7 @@ func LoadConfig(configPath string) (*Config, error) {
 	viper.SetDefault("fetcher.batch_size", defaultConfig.Fetcher.BatchSize)
 	viper.SetDefault("fetcher.cool_off_secs", defaultConfig.Fetcher.CoolOffSecs)
 	viper.SetDefault("fetcher.exclude_topics", defaultConfig.Fetcher.ExcludeTopics)
+	viper.SetDefault("fetcher.include_topics", defaultConfig.Fetcher.IncludeTopics)
 
 	// Read environment variables
 	viper.AutomaticEnv()
@@ -169,6 +172,7 @@ func LoadConfig(configPath string) (*Config, error) {
 	viper.BindEnv("fetcher.cool_off_secs", "SBOMER_FETCHER_COOL_OFF_SECS")
 	viper.BindEnv("fetcher.group_ids", "SBOMER_FETCHER_GROUP_IDS")
 	viper.BindEnv("fetcher.exclude_topics", "SBOMER_FETCHER_EXCLUDE_TOPICS")
+	viper.BindEnv("fetcher.include_topics", "SBOMER_FETCHER_INCLUDE_TOPICS")
 
 	// Read config file
 	if err := viper.ReadInConfig(); err != nil {
