@@ -14,6 +14,7 @@ require (
 )
 
 require (
+	github.com/CycloneDX/cyclonedx-go v0.9.2
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect

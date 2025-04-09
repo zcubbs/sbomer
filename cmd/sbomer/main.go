@@ -3,16 +3,17 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
+	"os"
+	"os/signal"
+	"syscall"
+
 	"github.com/zcubbs/sbomer/config"
 	"github.com/zcubbs/sbomer/internal/db"
 	"github.com/zcubbs/sbomer/internal/gitlab"
 	"github.com/zcubbs/sbomer/internal/processor"
 	"github.com/zcubbs/sbomer/internal/rabbitmq"
 	"github.com/zcubbs/sbomer/internal/syft"
-	"log"
-	"os"
-	"os/signal"
-	"syscall"
 )
 
 func main() {
@@ -71,6 +72,16 @@ func main() {
 		RoutingKey:    cfg.AMQP.RoutingKey,
 		ConsumerGroup: cfg.AMQP.ConsumerGroup,
 	})
+
+	// Initialize RabbitMQ echo.sboms.worker-scanner consumer
+	workerScannerConsumer, err := rabbitmq.New(rabbitmq.ConsumerConfig{
+		URI:           cfg.AMQP_SCANNER.URI,
+		Exchange:      cfg.AMQP_SCANNER.Exchange,
+		ExchangeType:  cfg.AMQP_SCANNER.ExchangeType,
+		RoutingKey:    cfg.AMQP_SCANNER.RoutingKey,
+		ConsumerGroup: cfg.AMQP_SCANNER.ConsumerGroup,
+	})
+
 	if err != nil {
 		log.Fatalf("Failed to initialize RabbitMQ consumer: %v", err)
 	}
@@ -91,7 +102,7 @@ func main() {
 	// Process messages
 	go func() {
 		for msg := range messages {
-			if err := msgProcessor.ProcessMessage(ctx, msg.Body); err != nil {
+			if err := msgProcessor.ProcessMessage(ctx, msg.Body, workerScannerConsumer); err != nil {
 				log.Printf("Error processing message: %v", err)
 			}
 			msg.Ack(false)

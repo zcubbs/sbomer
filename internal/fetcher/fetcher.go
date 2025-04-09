@@ -10,7 +10,7 @@ import (
 	"github.com/robfig/cron/v3"
 	"github.com/zcubbs/sbomer/internal/db"
 	"github.com/zcubbs/sbomer/internal/db/models"
-	"gitlab.com/gitlab-org/api/client-go"
+	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
 type Service struct {
@@ -22,6 +22,7 @@ type Service struct {
 	coolOffSecs   int
 	groupIDs      []string
 	excludeTopics []string
+	includeTopics []string
 	cron          *cron.Cron
 }
 
@@ -37,6 +38,7 @@ type Config struct {
 	CoolOffSecs   int
 	GroupIDs      []string
 	ExcludeTopics []string
+	IncludeTopics []string
 	Publisher     Publisher
 	DB            *db.DB
 }
@@ -57,6 +59,7 @@ func New(config Config) (*Service, error) {
 		coolOffSecs:   config.CoolOffSecs,
 		groupIDs:      config.GroupIDs,
 		excludeTopics: config.ExcludeTopics,
+		includeTopics: config.IncludeTopics,
 		cron:          cron.New(cron.WithSeconds()),
 	}, nil
 }
@@ -140,6 +143,25 @@ func (s *Service) shouldProcessProject(project *gitlab.Project) bool {
 	return true
 }
 
+func (s *Service) projectIncludesTopics(project *gitlab.Project) bool {
+	if len(s.includeTopics) == 0 {
+		return true
+	}
+
+	// Check if any of the project's topics match the included topics
+	for _, topic := range project.Topics {
+		for _, includedTopic := range s.includeTopics {
+			if topic == includedTopic {
+				log.Printf("🔍 Find project with topic [%s] ➡️  %s",
+					topic, project.PathWithNamespace)
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
 func (s *Service) fetchGroupProjects(ctx context.Context, groupID string, startTime time.Time) (int, error) {
 	totalProjects := 0
 	page := 1
@@ -166,6 +188,11 @@ func (s *Service) fetchGroupProjects(ctx context.Context, groupID string, startT
 		for _, project := range projects {
 			// Skip if project has excluded topics
 			if !s.shouldProcessProject(project) {
+				continue
+			}
+
+			// Skip if project does not include specified topics
+			if !s.projectIncludesTopics(project) {
 				continue
 			}
 

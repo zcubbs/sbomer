@@ -41,11 +41,13 @@ database:
   sslmode: disable
 
 fetcher:
-  schedule: "once"
+  schedule: "once"     # once or cron format "seconds minutes hours days months days_of_the_week"
   batch_size: 10
   cool_off_secs: 5
   group_ids:
     - "your-group-id"  # Optional: Specify GitLab group IDs to fetch from
+  include_topics:      # Optional: Include only projects with these topics
+    - "sbomer"
   exclude_topics:      # Optional: Skip projects with these topics
     - "skip-sbom"
     - "no-sbom"
