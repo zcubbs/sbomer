@@ -11,12 +11,13 @@ import (
 )
 
 type Config struct {
-	App      AppConfig      `mapstructure:"app"`
-	Database DatabaseConfig `mapstructure:"database"`
-	GitLab   GitLabConfig   `mapstructure:"gitlab"`
-	AMQP     AMQPConfig     `mapstructure:"amqp"`
-	Syft     SyftConfig     `mapstructure:"syft"`
-	Fetcher  FetcherConfig  `mapstructure:"fetcher"`
+	App          AppConfig      `mapstructure:"app"`
+	Database     DatabaseConfig `mapstructure:"database"`
+	GitLab       GitLabConfig   `mapstructure:"gitlab"`
+	AMQP         AMQPConfig     `mapstructure:"amqp"`
+	AMQP_SCANNER AMQPConfig     `mapstructure:"amqp_scanner"`
+	Syft         SyftConfig     `mapstructure:"syft"`
+	Fetcher      FetcherConfig  `mapstructure:"fetcher"`
 }
 
 type AppConfig struct {
@@ -110,6 +111,13 @@ func LoadConfig(configPath string) (*Config, error) {
 			RoutingKey:    "",
 			ConsumerGroup: "sbomer-group",
 		},
+		AMQP_SCANNER: AMQPConfig{
+			URI:           "amqp://guest:guest@localhost:5672/",
+			Exchange:      "scanner",
+			ExchangeType:  "fanout",
+			RoutingKey:    "",
+			ConsumerGroup: "echo.sboms.worker-scanner",
+		},
 		Fetcher: FetcherConfig{
 			Schedule:      "once", // Run once for development
 			BatchSize:     10,
@@ -135,6 +143,11 @@ func LoadConfig(configPath string) (*Config, error) {
 	viper.SetDefault("amqp.exchange_type", defaultConfig.AMQP.ExchangeType)
 	viper.SetDefault("amqp.routing_key", defaultConfig.AMQP.RoutingKey)
 	viper.SetDefault("amqp.consumer_group", defaultConfig.AMQP.ConsumerGroup)
+	viper.SetDefault("amqp_scanner.uri", defaultConfig.AMQP_SCANNER.URI)
+	viper.SetDefault("amqp_scanner.exchange", defaultConfig.AMQP_SCANNER.Exchange)
+	viper.SetDefault("amqp_scanner.exchange_type", defaultConfig.AMQP_SCANNER.ExchangeType)
+	viper.SetDefault("amqp_scanner.routing_key", defaultConfig.AMQP_SCANNER.RoutingKey)
+	viper.SetDefault("amqp_scanner.consumer_group", defaultConfig.AMQP_SCANNER.ConsumerGroup)
 	viper.SetDefault("syft.format", defaultConfig.Syft.Format)
 	viper.SetDefault("syft.syft_bin_path", defaultConfig.Syft.SyftBinPath)
 	viper.SetDefault("fetcher.schedule", defaultConfig.Fetcher.Schedule)
@@ -165,6 +178,11 @@ func LoadConfig(configPath string) (*Config, error) {
 	viper.BindEnv("amqp.exchange_type", "SBOMER_AMQP_EXCHANGE_TYPE")
 	viper.BindEnv("amqp.routing_key", "SBOMER_AMQP_ROUTING_KEY")
 	viper.BindEnv("amqp.consumer_group", "SBOMER_AMQP_CONSUMER_GROUP")
+	viper.BindEnv("amqp_scanner.uri", "SBOMER_AMQP_URI")
+	viper.BindEnv("amqp_scanner.exchange", "SBOMER_AMQP_SCANNER_EXCHANGE")
+	viper.BindEnv("amqp_scanner.exchange_type", "SBOMER_AMQP_SCANNER_EXCHANGE_TYPE")
+	viper.BindEnv("amqp_scanner.routing_key", "SBOMER_AMQP_SCANNER_ROUTING_KEY")
+	viper.BindEnv("amqp_scanner.consumer_group", "SBOMER_AMQP_SCANNER_CONSUMER_GROUP")
 	viper.BindEnv("syft.format", "SBOMER_SYFT_FORMAT")
 	viper.BindEnv("syft.syft_bin_path", "SBOMER_SYFT_BIN_PATH")
 	viper.BindEnv("fetcher.schedule", "SBOMER_FETCHER_SCHEDULE")

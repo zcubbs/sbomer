@@ -61,9 +61,7 @@ func (g *Generator) GenerateSBOM(projectPath string, outputPath string) error {
 	outputPath = filepath.Clean(outputPath)
 
 	cmd := exec.Command(syftPath, "scan", projectPath,
-		"-o", g.format,
-		"--output",
-		fmt.Sprintf("json=%s", outputPath))
+		fmt.Sprintf("-o=%s=%s", g.format, outputPath))
 
 	// Set up environment
 	cmd.Env = os.Environ()
