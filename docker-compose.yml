@@ -1,6 +1,7 @@
 version: '3.8'
 
 services:
+
   postgres:
     image: postgres:16-alpine
     environment:
@@ -8,7 +9,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: sbomer
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -32,6 +33,25 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+  sbomer:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: sbomer:latest
+    env_file: .env
+    environment:
+      SBOMER_DB_HOST: postgres
+      SBOMER_DB_PORT: 5432
+      SBOMER_AMQP_URI: amqp://guest:guest@rabbitmq:5672/
+      SBOMER_DB_URL: postgresql://postgres:postgres@postgres:5432/sbomer?sslmode=disable
+      SBOMER_FETCHER_SCHEDULE: 0 * * * * * # Every minute
+      SBOMER_SYFT_BIN_PATH: /usr/bin/syft
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
 
 volumes:
   postgres_data:
