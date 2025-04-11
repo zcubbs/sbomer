@@ -109,7 +109,7 @@ func LoadConfig(configPath string) (*Config, error) {
 			Exchange:      "sbomer",
 			ExchangeType:  "fanout",
 			RoutingKey:    "",
-			ConsumerGroup: "sbomer-group",
+			ConsumerGroup: "echo.sboms.sbomer",
 		},
 		AMQP_SCANNER: AMQPConfig{
 			URI:           "amqp://guest:guest@localhost:5672/",

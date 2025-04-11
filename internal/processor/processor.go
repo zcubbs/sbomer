@@ -170,5 +170,7 @@ func (p *Processor) ProcessMessage(ctx context.Context, data []byte, workerScann
 		return fmt.Errorf("failed to publish metadata: %w", err)
 	}
 
+	fmt.Printf("🚀 Published SBOM scan request event for project %d\n", msg.ProjectID)
+
 	return nil
 }
