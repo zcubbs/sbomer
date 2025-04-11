@@ -1,16 +1,13 @@
 # ────────────────────────────────────────────────────────────────────────
 # 🛠️ Stage 1: Build
 # ────────────────────────────────────────────────────────────────────────
-FROM harbor.forge.berger-levrault.com/diac-labs/base-images/alpine:latest AS build
+# 1.24.2-alpine3.21
+FROM golang@sha256:7772cb5322baa875edd74705556d08f0eeca7b9c4b5367754ce3f2f00041ccee AS build
 
 WORKDIR /app
 
-# Install Go and Git for building
-RUN apk add --no-cache go git
-
 # Install Task runner using Go
-RUN go install github.com/go-task/task/v3/cmd/task@latest && \
-  mv /root/go/bin/task /usr/local/bin/task
+RUN go install github.com/go-task/task/v3/cmd/task@latest
 
 # Copy Go module files and download dependencies
 COPY go.mod go.sum ./
@@ -25,12 +22,13 @@ RUN task build:sbomer && task build:fetcher
 # ────────────────────────────────────────────────────────────────────────
 # 🚀 Stage 2: Runtime
 # ────────────────────────────────────────────────────────────────────────
-FROM harbor.forge.berger-levrault.com/diac-labs/base-images/alpine:latest
+# 1.24.2-alpine3.21
+FROM golang@sha256:7772cb5322baa875edd74705556d08f0eeca7b9c4b5367754ce3f2f00041ccee
 
 WORKDIR /app
 
 # Install minimal runtime dependencies
-RUN apk add --no-cache go git syft
+RUN apk add --no-cache git syft
 
 # Copy built binaries and necessary resources from build stage
 COPY --from=build /app/go.mod ./
