@@ -34,9 +34,6 @@ archives:
     ids:
       - sbomer
       - fetcher
-    format_overrides:
-      - goos: windows
-        format: zip
     name_template: >-
       {{ .ProjectName }}_
       {{- title .Os }}_
@@ -51,10 +48,6 @@ dockers:
     dockerfile: docker/Dockerfile
     build_flag_templates:
       - "--platform=linux/amd64"
-      - "--build-arg=TARGETPLATFORM=linux/amd64"
-      - "--build-arg=BUILDPLATFORM=linux/amd64"
-      - "--build-arg=TARGETOS=linux"
-      - "--build-arg=TARGETARCH=amd64"
       - "--label=org.opencontainers.image.created={{.Date}}"
       - "--label=org.opencontainers.image.title={{.ProjectName}}"
       - "--label=org.opencontainers.image.revision={{.FullCommit}}"
@@ -63,12 +56,8 @@ dockers:
       - docker/entrypoint.sh
       - go.mod
       - go.sum
-      - scripts/
+      - scripts/migrate.go
       - migrations/
-      - cmd/
-      - internal/
-      - config/
-      - Taskfile.yml
     image_templates:
       - "ghcr.io/zcubbs/{{ .ProjectName }}:{{ .Version }}-amd64"
       - "ghcr.io/zcubbs/{{ .ProjectName }}:latest-amd64"
@@ -78,10 +67,6 @@ dockers:
     dockerfile: docker/Dockerfile
     build_flag_templates:
       - "--platform=linux/arm64"
-      - "--build-arg=TARGETPLATFORM=linux/arm64"
-      - "--build-arg=BUILDPLATFORM=linux/amd64"
-      - "--build-arg=TARGETOS=linux"
-      - "--build-arg=TARGETARCH=arm64"
       - "--label=org.opencontainers.image.created={{.Date}}"
       - "--label=org.opencontainers.image.title={{.ProjectName}}"
       - "--label=org.opencontainers.image.revision={{.FullCommit}}"
@@ -90,12 +75,8 @@ dockers:
       - docker/entrypoint.sh
       - go.mod
       - go.sum
-      - scripts/
+      - scripts/migrate.go
       - migrations/
-      - cmd/
-      - internal/
-      - config/
-      - Taskfile.yml
     image_templates:
       - "ghcr.io/zcubbs/{{ .ProjectName }}:{{ .Version }}-arm64"
       - "ghcr.io/zcubbs/{{ .ProjectName }}:latest-arm64"
