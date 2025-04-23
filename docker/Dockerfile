@@ -1,7 +1,13 @@
 # ────────────────────────────────────────────────────────────────────────
 # 🛠️ Stage 1: Build
 # ────────────────────────────────────────────────────────────────────────
-FROM golang:1.24-alpine AS build
+FROM --platform=$BUILDPLATFORM golang:1.24-alpine AS build
+
+# Add build arguments for targeting specific platform
+ARG TARGETPLATFORM
+ARG BUILDPLATFORM
+ARG TARGETOS
+ARG TARGETARCH
 
 WORKDIR /app
 
@@ -15,18 +21,24 @@ RUN go mod tidy
 # Copy the full source code
 COPY . .
 
-# Build binaries using Task commands
-RUN task build:sbomer && task build:fetcher
+# Set environment variables for cross-compilation
+ENV CGO_ENABLED=0
+ENV GOOS=${TARGETOS}
+ENV GOARCH=${TARGETARCH}
+
+# Build binaries
+RUN go build -o bin/sbomer cmd/sbomer/main.go && \
+    go build -o bin/fetcher cmd/fetcher/main.go
 
 # ────────────────────────────────────────────────────────────────────────
 # 🚀 Stage 2: Runtime
 # ────────────────────────────────────────────────────────────────────────
-FROM golang:1.24-alpine
+FROM --platform=$TARGETPLATFORM golang:1.24-alpine
 
 WORKDIR /app
 
 # Install minimal runtime dependencies
-RUN apk add --no-cache git syft
+RUN apk add --no-cache git
 
 # Copy built binaries and necessary resources from build stage
 COPY --from=build /app/go.mod ./
