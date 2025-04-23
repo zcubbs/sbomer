@@ -42,44 +42,38 @@ archives:
       {{- else }}{{ .Arch }}{{ end }}
 
 dockers:
-  - use: buildx
+  - image_templates:
+      - "ghcr.io/zcubbs/{{ .ProjectName }}:{{ .Version }}-amd64"
+      - "ghcr.io/zcubbs/{{ .ProjectName }}:latest-amd64"
+    use: docker
     goos: linux
     goarch: amd64
     dockerfile: docker/Dockerfile
     build_flag_templates:
       - "--platform=linux/amd64"
-      - "--label=org.opencontainers.image.created={{.Date}}"
-      - "--label=org.opencontainers.image.title={{.ProjectName}}"
-      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-      - "--label=org.opencontainers.image.version={{.Version}}"
     extra_files:
       - docker/entrypoint.sh
       - go.mod
       - go.sum
       - scripts/migrate.go
       - migrations/
-    image_templates:
-      - "ghcr.io/zcubbs/{{ .ProjectName }}:{{ .Version }}-amd64"
-      - "ghcr.io/zcubbs/{{ .ProjectName }}:latest-amd64"
-  - use: buildx
+
+  - image_templates:
+      - "ghcr.io/zcubbs/{{ .ProjectName }}:{{ .Version }}-arm64"
+      - "ghcr.io/zcubbs/{{ .ProjectName }}:latest-arm64"
+    use: docker
     goos: linux
     goarch: arm64
     dockerfile: docker/Dockerfile
     build_flag_templates:
       - "--platform=linux/arm64"
-      - "--label=org.opencontainers.image.created={{.Date}}"
-      - "--label=org.opencontainers.image.title={{.ProjectName}}"
-      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-      - "--label=org.opencontainers.image.version={{.Version}}"
     extra_files:
       - docker/entrypoint.sh
       - go.mod
       - go.sum
       - scripts/migrate.go
       - migrations/
-    image_templates:
-      - "ghcr.io/zcubbs/{{ .ProjectName }}:{{ .Version }}-arm64"
-      - "ghcr.io/zcubbs/{{ .ProjectName }}:latest-arm64"
+
 docker_manifests:
   - name_template: ghcr.io/zcubbs/{{ .ProjectName }}:{{ .Version }}
     image_templates:
@@ -89,6 +83,7 @@ docker_manifests:
     image_templates:
       - ghcr.io/zcubbs/{{ .ProjectName }}:latest-amd64
       - ghcr.io/zcubbs/{{ .ProjectName }}:latest-arm64
+
 changelog:
   sort: asc
   filters:
