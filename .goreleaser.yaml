@@ -48,7 +48,7 @@ dockers:
   - use: buildx
     goos: linux
     goarch: amd64
-    dockerfile: build/Dockerfile
+    dockerfile: docker/Dockerfile
     image_templates:
       - "ghcr.io/zcubbs/{{ .ProjectName }}:{{ .Version }}-amd64"
       - "ghcr.io/zcubbs/{{ .ProjectName }}:latest-amd64"
@@ -61,7 +61,7 @@ dockers:
   - use: buildx
     goos: linux
     goarch: arm64
-    dockerfile: build/Dockerfile
+    dockerfile: docker/Dockerfile
     image_templates:
       - "ghcr.io/zcubbs/{{ .ProjectName }}:{{ .Version }}-arm64"
       - "ghcr.io/zcubbs/{{ .ProjectName }}:latest-arm64"
