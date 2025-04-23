@@ -39,7 +39,7 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install Security Scanner
-        run: task tools:install:gosec
+        run: task install:gosec
 
       - name: Run Go Security Scanner
         run: task scan

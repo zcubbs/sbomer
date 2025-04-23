@@ -39,7 +39,7 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install Linter
-        run: task tools:install:golangci-lint
+        run: task install:golangci-lint
 
       - name: Lint
         run: task lint

@@ -88,7 +88,7 @@ tasks:
       - go vet ./...
       - task: fmt
 
-  tools:install:gosec:
+  install:gosec:
     desc: Install gosec
     cmds:
       - go install github.com/securego/gosec/v2/cmd/gosec@latest
