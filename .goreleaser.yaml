@@ -31,7 +31,7 @@ archives:
     format: tar.gz
     files:
       - none*
-    builds:
+    ids:
       - sbomer
       - fetcher
     format_overrides:
@@ -53,6 +53,11 @@ dockers:
       - docker/entrypoint.sh
       - go.mod
       - go.sum
+      - scripts/
+      - migrations/
+      - cmd/
+      - pkg/
+      - Taskfile.yml
     image_templates:
       - "ghcr.io/zcubbs/{{ .ProjectName }}:{{ .Version }}-amd64"
       - "ghcr.io/zcubbs/{{ .ProjectName }}:latest-amd64"
@@ -70,6 +75,11 @@ dockers:
       - docker/entrypoint.sh
       - go.mod
       - go.sum
+      - scripts/
+      - migrations/
+      - cmd/
+      - pkg/
+      - Taskfile.yml
     image_templates:
       - "ghcr.io/zcubbs/{{ .ProjectName }}:{{ .Version }}-arm64"
       - "ghcr.io/zcubbs/{{ .ProjectName }}:latest-arm64"
@@ -96,7 +106,7 @@ changelog:
       - '^test:'
       - '^conf:'
 snapshot:
-  name_template: SNAPSHOT-{{ .Commit }}
+  name_template: "{{ incpatch .Version }}-next"
 checksum:
   name_template: '{{ .ProjectName }}_{{ .Version }}_checksums.txt'
 signs:
