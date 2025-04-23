@@ -56,7 +56,8 @@ dockers:
       - scripts/
       - migrations/
       - cmd/
-      - pkg/
+      - internal/
+      - config/
       - Taskfile.yml
     image_templates:
       - "ghcr.io/zcubbs/{{ .ProjectName }}:{{ .Version }}-amd64"
@@ -78,7 +79,8 @@ dockers:
       - scripts/
       - migrations/
       - cmd/
-      - pkg/
+      - internal/
+      - config/
       - Taskfile.yml
     image_templates:
       - "ghcr.io/zcubbs/{{ .ProjectName }}:{{ .Version }}-arm64"
