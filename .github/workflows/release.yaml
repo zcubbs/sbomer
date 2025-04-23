@@ -1,0 +1,121 @@
+name: Release
+
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+  packages: write
+  # This is used for the identity challenge
+  # with sigstore/fulcio when outside PRs.
+  id-token: write
+  actions: write
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-release
+  cancel-in-progress: true
+
+env:
+  CHART_NAME: sbomer
+
+jobs:
+  release:
+
+    runs-on: ubuntu-latest
+    env:
+      MAJOR: 0
+      MINOR: 1
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe # v4.1.0
+        with:
+          go-version: '1.24'
+
+      - name: Set up Node
+        uses: actions/setup-node@v2.4.0
+        with:
+          node-version: '18.x'
+
+      - name: Install Task
+        uses: arduino/setup-task@v1.0.3
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      # remove tests in order to clean dependencies
+      - name: Remove xxx_test.go files
+        run: rm -rf *_test.go ./examples
+
+      # cleanup test dependencies
+      - name: Cleanup dependencies
+        run: go mod tidy
+
+      - name: List files
+        run: tree -Cfi
+      - name: Write new go.mod into logs
+        run: cat go.mod
+      - name: Write new go.sum into logs
+        run: cat go.sum
+
+      - name: Fetch all tags
+        run: git fetch --tags
+
+      - name: Get latest release version
+        run: |
+          LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1) 2>/dev/null) || echo "No tags found"
+          if [[ $LATEST_TAG == "No tags found" ]]; then
+            echo "NEW_VERSION=v$MAJOR.$MINOR.0" >> $GITHUB_ENV
+          else
+            echo "version=$LATEST_TAG" >> $GITHUB_ENV
+          fi
+
+      - name: Calculate new version
+        run: |
+          LATEST_MINOR=$(echo $version | cut -d. -f2)
+          PATCH=$(echo $version | cut -d. -f3 | tr -d 'v')
+
+          if [[ "$MINOR" != "$LATEST_MINOR" ]]; then
+            PATCH=0
+          else
+            PATCH=$((PATCH+1))
+          fi
+
+          NEW_VERSION="v$MAJOR.$MINOR.$PATCH"
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+
+      - name: Create and push tag
+        run: |
+          if ! git rev-parse $NEW_VERSION >/dev/null 2>&1; then
+            git config --global user.name '${{ github.actor }}'
+            git config --global user.email "${{ github.actor }}@users.noreply.github.com"
+            git add .
+            git commit --allow-empty -m 'bump version to ${{ env.NEW_VERSION }}'
+            git tag $NEW_VERSION
+            git push origin $NEW_VERSION
+          else
+            echo "Tag $NEW_VERSION already exists and will not be overwritten."
+          fi
+
+      - name: Release
+        uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v0.1.15
+        with:
+          name: ${{ env.NEW_VERSION }}
+          tag_name: ${{ env.NEW_VERSION }}
+
+      - name: Login to GHCR
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: goreleaser/goreleaser-action@7ec5c2b0c6cdda6e8bbb49444bc797dd33d74dd8 # v3.0.0
+        with:
+          distribution: goreleaser
+          version: latest
+          args: release -f .goreleaser.yaml --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -7,13 +7,13 @@ import (
 )
 
 type Consumer struct {
-	conn           *amqp091.Connection
-	channel        *amqp091.Channel
-	exchange       string
-	exchangeType   string
-	routingKey     string
-	consumerGroup  string
-	prefetchCount  int
+	conn          *amqp091.Connection
+	channel       *amqp091.Channel
+	exchange      string
+	exchangeType  string
+	routingKey    string
+	consumerGroup string
+	prefetchCount int
 }
 
 type ConsumerConfig struct {
@@ -45,7 +45,7 @@ func New(config ConsumerConfig) (*Consumer, error) {
 	err = ch.Qos(
 		config.PrefetchCount, // prefetch count
 		0,                    // prefetch size
-		false,               // global
+		false,                // global
 	)
 	if err != nil {
 		ch.Close()
@@ -57,11 +57,11 @@ func New(config ConsumerConfig) (*Consumer, error) {
 	err = ch.ExchangeDeclare(
 		config.Exchange,     // name
 		config.ExchangeType, // type
-		true,               // durable
-		false,              // auto-deleted
-		false,              // internal
-		false,              // no-wait
-		nil,                // arguments
+		true,                // durable
+		false,               // auto-deleted
+		false,               // internal
+		false,               // no-wait
+		nil,                 // arguments
 	)
 	if err != nil {
 		ch.Close()
@@ -72,11 +72,11 @@ func New(config ConsumerConfig) (*Consumer, error) {
 	// Declare queue for the consumer group
 	queue, err := ch.QueueDeclare(
 		config.ConsumerGroup, // name - using consumer group as queue name
-		true,                // durable
-		false,               // delete when unused
-		false,               // exclusive
-		false,               // no-wait
-		nil,                // arguments
+		true,                 // durable
+		false,                // delete when unused
+		false,                // exclusive
+		false,                // no-wait
+		nil,                  // arguments
 	)
 	if err != nil {
 		ch.Close()
@@ -86,9 +86,9 @@ func New(config ConsumerConfig) (*Consumer, error) {
 
 	// Bind queue to exchange
 	err = ch.QueueBind(
-		queue.Name,         // queue name
-		config.RoutingKey,  // routing key
-		config.Exchange,    // exchange
+		queue.Name,        // queue name
+		config.RoutingKey, // routing key
+		config.Exchange,   // exchange
 		false,             // no-wait
 		nil,               // arguments
 	)
@@ -121,15 +121,15 @@ func (c *Consumer) Close() {
 func (c *Consumer) Consume(ctx context.Context) (<-chan amqp091.Delivery, error) {
 	// Each consumer in the group gets its own consumer tag
 	consumerTag := fmt.Sprintf("%s-%d", c.consumerGroup, c.prefetchCount)
-	
+
 	return c.channel.Consume(
 		c.consumerGroup, // queue
 		consumerTag,     // consumer
-		false,          // auto-ack
-		false,          // exclusive
-		false,          // no-local
-		false,          // no-wait
-		nil,            // args
+		false,           // auto-ack
+		false,           // exclusive
+		false,           // no-local
+		false,           // no-wait
+		nil,             // args
 	)
 }
 
@@ -142,7 +142,7 @@ func (c *Consumer) Publish(ctx context.Context, body []byte) error {
 		false,        // immediate
 		amqp091.Publishing{
 			ContentType:  "application/json",
-			Body:        body,
+			Body:         body,
 			DeliveryMode: amqp091.Persistent,
 		},
 	)

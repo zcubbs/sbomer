@@ -1,11 +1,9 @@
 module github.com/zcubbs/sbomer
 
-go 1.22
-
-toolchain go1.23.6
+go 1.24
 
 require (
-	github.com/jackc/pgx/v5 v5.5.1
+	github.com/jackc/pgx/v5 v5.5.4
 	github.com/joho/godotenv v1.5.1
 	github.com/rabbitmq/amqp091-go v1.10.0
 	github.com/robfig/cron/v3 v3.0.1
@@ -16,6 +14,8 @@ require (
 require (
 	github.com/CycloneDX/cyclonedx-go v0.9.2
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
+	github.com/go-chi/chi/v5 v5.2.1
+	github.com/go-chi/cors v1.2.1
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
