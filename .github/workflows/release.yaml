@@ -63,6 +63,9 @@ jobs:
       - name: Fetch all tags
         run: git fetch --tags
 
+      - name: Make entrypoint script executable
+        run: chmod +x docker/entrypoint.sh
+
       - name: Get latest release version
         run: |
           LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1) 2>/dev/null) || echo "No tags found"

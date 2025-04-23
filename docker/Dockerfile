@@ -13,11 +13,5 @@ COPY scripts/migrate.go ./scripts/migrate.go
 COPY migrations ./migrations
 COPY docker/entrypoint.sh /entrypoint.sh
 
-# Make entrypoint executable
-RUN chmod +x /entrypoint.sh
-
-# Create required runtime directory
-RUN mkdir -p /app/tmp/sbomer
-
 # Start the application using the entrypoint script
 ENTRYPOINT ["/entrypoint.sh"]
