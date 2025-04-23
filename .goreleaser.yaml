@@ -1,4 +1,4 @@
----
+version: 2
 
 project_name: sbomer
 before:
@@ -51,6 +51,8 @@ dockers:
     dockerfile: docker/Dockerfile
     extra_files:
       - docker/entrypoint.sh
+      - go.mod
+      - go.sum
     image_templates:
       - "ghcr.io/zcubbs/{{ .ProjectName }}:{{ .Version }}-amd64"
       - "ghcr.io/zcubbs/{{ .ProjectName }}:latest-amd64"
@@ -64,6 +66,10 @@ dockers:
     goos: linux
     goarch: arm64
     dockerfile: docker/Dockerfile
+    extra_files:
+      - docker/entrypoint.sh
+      - go.mod
+      - go.sum
     image_templates:
       - "ghcr.io/zcubbs/{{ .ProjectName }}:{{ .Version }}-arm64"
       - "ghcr.io/zcubbs/{{ .ProjectName }}:latest-arm64"
