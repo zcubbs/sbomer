@@ -5,6 +5,8 @@ FROM golang:1.24-alpine
 
 WORKDIR /app
 
+RUN apk add --no-cache git syft
+
 # Copy pre-built binaries and necessary resources
 COPY sbomer /app/bin/sbomer
 COPY fetcher /app/bin/fetcher
