@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# Install git and syft for scanning
+apk add --no-cache git syft
+
 # Optional: Run database migrations
 go run scripts/migrate.go || echo "Migrations failed or skipped"
 
