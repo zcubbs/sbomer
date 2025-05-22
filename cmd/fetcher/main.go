@@ -7,12 +7,28 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"strings"
 
 	"github.com/zcubbs/sbomer/config"
 	"github.com/zcubbs/sbomer/internal/db"
 	"github.com/zcubbs/sbomer/internal/fetcher"
 	"github.com/zcubbs/sbomer/internal/rabbitmq"
 )
+
+func encodeAMQPVhost(uri string) string {
+	parts := strings.SplitN(uri, "/", 4)
+	if len(parts) == 4 {
+		// If the vhost doesn't start with %2F, prepend it to encode the leading slash
+		vhost := parts[3]
+		if !strings.HasPrefix(vhost, "%2F") {
+			vhost = "%2F" + vhost
+		}
+		// No need for url.PathEscape here since we're only encoding the leading slash
+		parts[3] = vhost
+		return strings.Join(parts, "/")
+	}
+	return uri
+}
 
 func main() {
 	log.SetOutput(os.Stdout)
@@ -49,7 +65,7 @@ func main() {
 
 	// Initialize RabbitMQ publisher
 	rabbitConfig := rabbitmq.ConsumerConfig{
-		URI:           cfg.AMQP.URI,
+		URI:           encodeAMQPVhost(cfg.AMQP.URI),
 		Exchange:      cfg.AMQP.Exchange,
 		ExchangeType:  cfg.AMQP.ExchangeType,
 		RoutingKey:    cfg.AMQP.RoutingKey,

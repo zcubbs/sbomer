@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"strings"
 
 	"github.com/zcubbs/sbomer/config"
 	"github.com/zcubbs/sbomer/internal/db"
@@ -15,6 +16,21 @@ import (
 	"github.com/zcubbs/sbomer/internal/rabbitmq"
 	"github.com/zcubbs/sbomer/internal/syft"
 )
+
+func encodeAMQPVhost(uri string) string {
+	parts := strings.SplitN(uri, "/", 4)
+	if len(parts) == 4 {
+		// If the vhost doesn't start with %2F, prepend it to encode the leading slash
+		vhost := parts[3]
+		if !strings.HasPrefix(vhost, "%2F") {
+			vhost = "%2F" + vhost
+		}
+		// No need for url.PathEscape here since we're only encoding the leading slash
+		parts[3] = vhost
+		return strings.Join(parts, "/")
+	}
+	return uri
+}
 
 func main() {
 	// Set up logging
@@ -66,7 +82,7 @@ func main() {
 
 	// Initialize RabbitMQ consumer
 	consumer, err := rabbitmq.New(rabbitmq.ConsumerConfig{
-		URI:           cfg.AMQP.URI,
+		URI:           encodeAMQPVhost(cfg.AMQP.URI),
 		Exchange:      cfg.AMQP.Exchange,
 		ExchangeType:  cfg.AMQP.ExchangeType,
 		RoutingKey:    cfg.AMQP.RoutingKey,
@@ -75,7 +91,7 @@ func main() {
 
 	// Initialize RabbitMQ echo.sboms.worker-scanner consumer
 	workerScannerConsumer, err := rabbitmq.New(rabbitmq.ConsumerConfig{
-		URI:           cfg.AMQP_SCANNER.URI,
+		URI:           encodeAMQPVhost(cfg.AMQP_SCANNER.URI),
 		Exchange:      cfg.AMQP_SCANNER.Exchange,
 		ExchangeType:  cfg.AMQP_SCANNER.ExchangeType,
 		RoutingKey:    cfg.AMQP_SCANNER.RoutingKey,
